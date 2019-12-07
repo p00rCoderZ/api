@@ -27,7 +27,8 @@ class EndpointTest(unittest.TestCase):
                 return
         pytest.fail()
 
-
     def test_root(self):
         r = requests.get('http://localhost:8000/')
-        print(r)
+        payload = r.json()
+        self.assertEqual(payload["status"], 200)
+        self.assertEqual(payload["app"], "K-UP API")
