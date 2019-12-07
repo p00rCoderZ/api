@@ -20,6 +20,10 @@ async def test(request):
     except jwt.exceptions.InvalidSignatureError:
         return json({"status": 400, "msg": "User not authenticated"})
 
+@app.route("/", methods=['GET'])
+async def root(request):
+    return json({"status": 200, "app": "K-UP API"})
+
 @app.route("/new_user", methods=['POST'])
 async def new_user(request):
     request = request.json
