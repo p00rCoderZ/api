@@ -76,3 +76,23 @@ class EndpointTest(unittest.TestCase):
         cur = self.conn.cursor()
         cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
         self.assertEqual(cur.fetchone()[0], 1)
+    
+    def test_soft_delete(self):
+        user = {
+            "name": 'test',
+            "surname": "surname",
+            "email": 'email',
+            "password": 'passwd'
+        }
+        r = requests.post('http://localhost:8000/new_user', data=json.dumps(user))
+        self.assertEqual(r.json()["status"], 200)
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
+        self.assertEqual(cur.fetchone()[0], 1)
+
+        r = requests.post('http://localhost:8000/delete_user', data=json.dumps({"id": 1}))
+        self.assertEqual(r.json()["status"], 200)
+
+        cur.execute("SELECT soft_delete FROM users WHERE id=1")
+        self.assertEqual(cur.fetchone()[0], True)
