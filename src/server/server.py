@@ -40,6 +40,18 @@ async def new_user(request):
     else:
         return json({"status:": 400, "error_msg": "Bad request"})
 
+@app.route("/delete_user", methods=['POST'])
+async def delete_user(request):
+    request = request.json
+    q = "UPDATE users SET soft_delete='t' WHERE id={}"
+    db_conn = Db.get_pool()
+    try:
+        await db_conn.fetchval(q.format(request['id']))
+        return json({"status": 200})
+    except:
+        return json({"status": 400})
+
+
 async def main():
     await Db.init(DSN)
     db_conn = Db.get_pool()
