@@ -9,7 +9,8 @@ import jwt
 import asyncio
 
 app = Sanic()
-DSN = 'postgres://pros:foobar@postgres:5432/kup'
+DBNAME = app.config['DBNAME'] if "DBNAME" in app.config else 'kup'
+DSN = 'postgres://pros:foobar@postgres:5432/{}'.format(DBNAME)
 
 @app.route("/jwt", methods=['POST'])
 async def test(request):
