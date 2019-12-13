@@ -8,7 +8,7 @@ import os
 import json
 import jwt
 from urllib3.exceptions import NewConnectionError
-
+from copy import deepcopy
 API_PORT=8000
 API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
@@ -123,3 +123,25 @@ class EndpointTest(unittest.TestCase):
         temp_user = DEFAULT_USER
         del temp_user['password']
         self.assertEqual(r.json()["users"][0], DEFAULT_USER)
+
+    def test_specific_users(self):
+        r = self._send_post_request(API_URL + 'users', payload={})
+        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.json()["users"], [])
+
+        self._insert_new_user()
+
+        second_user = deepcopy(DEFAULT_USER)
+        second_user.update({"email": "second_email"})
+        self._insert_new_user(second_user)
+
+        r = self._send_post_request(API_URL + 'users/1', payload={})
+        self.assertEqual(len(r.json()["users"]), 1)
+        first_user = DEFAULT_USER
+        del first_user['password']
+        self.assertEqual(r.json()["users"][0], DEFAULT_USER)
+
+        r = self._send_post_request(API_URL + 'users/2', payload={})
+        self.assertEqual(len(r.json()["users"]), 1)
+        del second_user['password']
+        self.assertEqual(r.json()["users"][0], second_user)
