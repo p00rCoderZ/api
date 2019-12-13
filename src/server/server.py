@@ -56,6 +56,26 @@ async def delete_user(request):
             return json({"status": 400, "error_message": "User does not exist"})
     return json({"status:": 400, "error_message": "Bad request"})
 
+@app.route("/users", methods=['POST'])
+async def show_users(request):
+    ok, _ = extract_jwt(request.body, SERIAL)
+    if ok:
+        q = "SELECT * FROM users"
+        db_conn = Db.get_pool()
+        users = []
+        try:
+            rows = await db_conn.fetch(q)
+            for user in rows:
+                users.append({
+                    "name": user["name"],
+                    "surname": user["surname"],
+                    "email": user["email"]
+                })
+            return json({"status": 200, "users": users})
+        except:
+            return json({"status": 400, "error_message": "User does not exist", "users": []})
+    return json({"status:": 400, "error_message": "Bad request", "users": []})
+
 async def main():
     await Db.init(DSN)
     db_conn = Db.get_pool()
