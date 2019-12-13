@@ -122,6 +122,7 @@ class EndpointTest(unittest.TestCase):
         self.assertEqual(len(r.json()["users"]), 1)
         temp_user = DEFAULT_USER
         del temp_user['password']
+        temp_user.update({"id": 1})
         self.assertEqual(r.json()["users"][0], DEFAULT_USER)
 
     def test_specific_users(self):
@@ -132,13 +133,14 @@ class EndpointTest(unittest.TestCase):
         self._insert_new_user()
 
         second_user = deepcopy(DEFAULT_USER)
-        second_user.update({"email": "second_email"})
+        second_user.update({"email": "second_email", "id": 2})
         self._insert_new_user(second_user)
 
         r = self._send_post_request(API_URL + 'users/1', payload={})
         self.assertEqual(len(r.json()["users"]), 1)
         first_user = DEFAULT_USER
         del first_user['password']
+        first_user.update({"id": 1})
         self.assertEqual(r.json()["users"][0], DEFAULT_USER)
 
         r = self._send_post_request(API_URL + 'users/2', payload={})

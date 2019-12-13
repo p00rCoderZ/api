@@ -66,6 +66,7 @@ async def show_user(request, id):
             user = await db_conn.fetch(q.format(id))
             user = user[0]
             user = {
+                "id": user["id"],
                 "name": user["name"],
                 "surname": user["surname"],
                 "email": user["email"]
@@ -87,6 +88,7 @@ async def show_users(request):
             rows = await db_conn.fetch(q)
             for user in rows:
                 users.append({
+                    "id": user["id"],
                     "name": user["name"],
                     "surname": user["surname"],
                     "email": user["email"]
