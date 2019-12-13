@@ -3,23 +3,25 @@ from sanic import Sanic
 from sanic.response import json
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
-from validate import validate_user
+from validate import validate_user, extract_jwt
 
 import jwt
 import asyncio
+import toml
 
 app = Sanic()
 DBNAME = app.config['DBNAME'] if "DBNAME" in app.config else 'kup'
+SERIAL = 'serial' if "DBNAME" in app.config else toml.load('/secrets.toml')['serial']
 DSN = 'postgres://pros:foobar@postgres:5432/{}'.format(DBNAME)
-
+ 
 @app.route("/jwt", methods=['POST'])
 async def test(request):
-    print(request.body)
-    try:
-        d = jwt.decode(request.body, 'serial', algorithm='HS256')
-        return json({"status": 200, "msg": "Success"})
-    except jwt.exceptions.InvalidSignatureError:
-        return json({"status": 400, "msg": "User not authenticated"})
+    payload = request.body
+    ok, payload = extract_jwt(payload, SERIAL)
+    if ok:
+        return json({"status": 200, "payload": payload})
+    else:
+        return json({"status": 400, "error_message": "User not authenticated"})
 
 @app.route("/", methods=['GET'])
 async def root(request):

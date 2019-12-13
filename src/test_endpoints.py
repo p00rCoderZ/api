@@ -6,9 +6,11 @@ import pytest
 import psycopg2
 import os
 import json
+import jwt
 from urllib3.exceptions import NewConnectionError
 
 API_PORT=8000
+API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
 
 
@@ -48,6 +50,19 @@ class EndpointTest(unittest.TestCase):
         payload = r.json()
         self.assertEqual(payload["status"], 200)
         self.assertEqual(payload["app"], "K-UP API")
+
+    def _wrap_payload(self, payload):
+        return jwt.encode(payload, 'serial', algorithm='HS256')
+
+    def test_jwt(self):
+        r = requests.post(API_URL + 'jwt', data=self._wrap_payload({"test": "test"}))
+        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.json()["payload"], {"test": "test"})
+        bad_token = jwt.encode({"test": "test"}, key="badkey", algorithm='HS256')
+        r = requests.post(API_URL + 'jwt', bad_token)
+        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.json()["error_message"], "User not authenticated")
+
 
     def test_db_clear_after_restart(self):
         cur = self.conn.cursor()
