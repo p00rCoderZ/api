@@ -29,31 +29,32 @@ async def root(request):
 
 @app.route("/new_user", methods=['POST'])
 async def new_user(request):
-    request = request.json
-    if validate_user(request):
-        print('Inserting new user to db')
-        db_conn = Db.get_pool()
-        q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
-        try:
-            lets_see = await db_conn.fetchval(q.format(**request))
-            print(lets_see)
-            return json({"status": 200, "id": lets_see})
-        except UniqueViolationError as e:
-            return json({"status": 400, "error_msg": "User already exists"})
-    else:
-        return json({"status:": 400, "error_msg": "Bad request"})
+    ok, payload = extract_jwt(request.body, SERIAL)
+    if ok:
+        if validate_user(payload):
+            print('Inserting new user to db')
+            db_conn = Db.get_pool()
+            q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
+            try:
+                lets_see = await db_conn.fetchval(q.format(**payload))
+                print(lets_see)
+                return json({"status": 200, "id": lets_see})
+            except UniqueViolationError as e:
+                return json({"status": 400, "error_message": "User already exists"})
+    return json({"status:": 400, "error_message": "Bad request"})
 
 @app.route("/delete_user", methods=['POST'])
 async def delete_user(request):
-    request = request.json
-    q = "UPDATE users SET soft_delete='t' WHERE id={}"
-    db_conn = Db.get_pool()
-    try:
-        await db_conn.fetchval(q.format(request['id']))
-        return json({"status": 200})
-    except:
-        return json({"status": 400})
-
+    ok, payload = extract_jwt(request.body, SERIAL)
+    if ok:
+        q = "UPDATE users SET soft_delete='t' WHERE id={}"
+        db_conn = Db.get_pool()
+        try:
+            await db_conn.fetchval(q.format(payload['id']))
+            return json({"status": 200})
+        except:
+            return json({"status": 400, "error_message": "User does not exist"})
+    return json({"status:": 400, "error_message": "Bad request"})
 
 async def main():
     await Db.init(DSN)

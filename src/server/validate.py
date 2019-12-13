@@ -1,5 +1,5 @@
 import jwt
-
+from jwt.exceptions import InvalidSignatureError, DecodeError
 def validate_user(data):
     has_key_not_empty = lambda key: key in data and data[key]
 
@@ -10,5 +10,5 @@ def extract_jwt(token, serial):
     try:
         payload = jwt.decode(token, serial, algorithm='HS256')
         return (True, payload)
-    except jwt.exceptions.InvalidSignatureError:
+    except (InvalidSignatureError, DecodeError):
         return (False, None)
