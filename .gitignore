@@ -1,2 +1,6 @@
 docker_build/
 __pycache__
+*secrets*
+*secret*
+secrets.toml
+*.toml
