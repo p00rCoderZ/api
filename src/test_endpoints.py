@@ -12,14 +12,19 @@ from urllib3.exceptions import NewConnectionError
 API_PORT=8000
 API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
-
-
+DEFAULT_USER = {
+    "name": 'test',
+    "surname": "surname",
+    "email": 'email',
+    "password": 'passwd'
+}
 class EndpointTest(unittest.TestCase):
     def setUp(self):
         self._restart_test_db()
         self.sb = subprocess.Popen('/usr/api/src/server/server.py')
         self._wait_for_port()
         self.conn = psycopg2.connect(DSN)
+        self.cur = self.conn.cursor()
 
     def tearDown(self):
         self.conn.close()
@@ -54,60 +59,55 @@ class EndpointTest(unittest.TestCase):
     def _wrap_payload(self, payload):
         return jwt.encode(payload, 'serial', algorithm='HS256')
 
+    def _send_post_request(self, URL, payload, response_code=200, wrap_payload=True):
+        r = requests.post(URL, data=self._wrap_payload(payload) if wrap_payload else payload)
+
+        self.assertEqual(r.json()["status"], response_code)
+
+        return r
+
+    def _insert_new_user(self, user=None, response_code=200):
+        user = DEFAULT_USER if user is None else user
+        return self._send_post_request(API_URL + 'new_user', payload=user, response_code=response_code)
+
     def test_jwt(self):
-        r = requests.post(API_URL + 'jwt', data=self._wrap_payload({"test": "test"}))
-        self.assertEqual(r.json()["status"], 200)
+        r = self._send_post_request(API_URL + 'jwt', payload={"test": "test"})
         self.assertEqual(r.json()["payload"], {"test": "test"})
         bad_token = jwt.encode({"test": "test"}, key="badkey", algorithm='HS256')
-        r = requests.post(API_URL + 'jwt', bad_token)
+        r = self._send_post_request(API_URL + 'jwt', payload=bad_token, response_code=400, wrap_payload=False)
         self.assertEqual(r.json()["status"], 400)
         self.assertEqual(r.json()["error_message"], "User not authenticated")
 
-
     def test_db_clear_after_restart(self):
-        cur = self.conn.cursor()
         q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
-        user = {
-            "name": 'test',
-            "surname": "surname",
-            "email": 'email',
-            "password": 'passwd'
-        }
-        cur.execute(q.format(**user))
+        user = DEFAULT_USER
+        self.cur.execute(q.format(**user))
 
-        cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
-        self.assertEqual(cur.fetchone()[0], 1)
+        self.cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
+        self.assertEqual(self.cur.fetchone()[0], 1)
 
     def test_new_user(self):
-        user = {
-            "name": 'test',
-            "surname": "surname",
-            "email": 'email',
-            "password": 'passwd'
-        }
-        r = requests.post('http://localhost:8000/new_user', data=json.dumps(user))
-        self.assertEqual(r.json()["status"], 200)
+        self._insert_new_user()
 
-        cur = self.conn.cursor()
-        cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
-        self.assertEqual(cur.fetchone()[0], 1)
-    
+        self.cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
+        self.assertEqual(self.cur.fetchone()[0], 1)
+
+        second_user = DEFAULT_USER
+        second_user.update({"email": "second_mail"})
+        self._insert_new_user(second_user)
+        self.cur.execute("SELECT count(*) FROM users")
+        self.assertEqual(self.cur.fetchone()[0], 2)
+
+    def test_same_user_twice(self):
+        self._insert_new_user()
+        r = self._insert_new_user(response_code=400)
+        self.assertEqual(r.json()["error_message"], "User already exists")
+
     def test_soft_delete(self):
-        user = {
-            "name": 'test',
-            "surname": "surname",
-            "email": 'email',
-            "password": 'passwd'
-        }
-        r = requests.post('http://localhost:8000/new_user', data=json.dumps(user))
+        self._insert_new_user()
+
+        r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
         self.assertEqual(r.json()["status"], 200)
 
-        cur = self.conn.cursor()
-        cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
-        self.assertEqual(cur.fetchone()[0], 1)
-
-        r = requests.post('http://localhost:8000/delete_user', data=json.dumps({"id": 1}))
-        self.assertEqual(r.json()["status"], 200)
-
-        cur.execute("SELECT soft_delete FROM users WHERE id=1")
-        self.assertEqual(cur.fetchone()[0], True)
+        self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
+        self.assertEqual(self.cur.fetchone()[0], True)
