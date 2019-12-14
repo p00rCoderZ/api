@@ -158,10 +158,8 @@ class EndpointTest(unittest.TestCase):
             'tags': [1, 2]
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post)
-        self.assertEqual(r.json()['status'], 200)
         r = self._send_post_request(API_URL + 'posts', payload={})
-        self.assertEqual(r.json()['status'], 200)
-        print(r.json())   
+        r = self._send_post_request(API_URL + 'posts/1', payload={})
 
     def test_new_post_invalid_data(self):
         self._insert_new_user()
@@ -173,3 +171,15 @@ class EndpointTest(unittest.TestCase):
             'tags': [1, 2, 3]
         }
         self._send_post_request(API_URL + 'new_post', payload=post, response_code=400)
+
+    def test_delete_post(self):
+        self._insert_new_user()
+        post = {
+            "type": "seek",
+            "title": "Hello",
+            "user_id": 1,
+            "content": "Huge amount of content",
+            'tags': [1, 2]
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post)
+        r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})

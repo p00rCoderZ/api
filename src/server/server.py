@@ -3,7 +3,7 @@ from sanic import Sanic
 from sanic.response import json
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
-from validate import validate_user, extract_jwt, validate_post
+from validate import validate_user, extract_jwt, validate_post, validate_deletion
 
 import jwt
 import asyncio
@@ -146,6 +146,45 @@ async def posts(request):
                 temp.update({"tags": tags})
                 posts.append(temp)
             return json({"status": 200, "posts": posts})
+        except:
+            return json({"status": 400, "error_message": "Bad request"})
+    return json({"status": 400, "error_message": "Bad request"})
+
+@app.route("/posts/<id:int>", methods=['POST'])
+async def posts(request, id):
+    ok, _ = extract_jwt(request.body, SERIAL)
+    if ok:
+        db_conn = Db.get_pool()
+        try:
+            conn = Db.get_pool()
+            row = await conn.fetch("""SELECT * FROM posts WHERE id={}""".format(id))
+            row = row[0]
+            temp = {
+                    "id": row['id'],
+                    "type": row['type'],
+                    "title": row['title'],
+                    "user_id": row['user_id'],
+                    "content": row['content'],
+                }
+            q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
+            tags_rows = await conn.fetch(q.format(row['id']))
+            tags = [tag['tag_id'] for tag in tags_rows]
+            temp.update({"tags": tags})
+
+            return json({"status": 200, "posts": [temp]})
+        except:
+            return json({"status": 400, "error_message": "Bad request", "posts": []})
+    return json({"status": 400, "error_message": "Bad request", "posts": []})
+
+@app.route("/delete_post", methods=['POST'])
+async def posts(request):
+    ok, payload = extract_jwt(request.body, SERIAL)
+    if ok and await validate_deletion(payload):
+        db_conn = Db.get_pool()
+        try:
+            conn = Db.get_pool()
+            row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id={}""".format(payload['id']))
+            return json({"status": 200})
         except:
             return json({"status": 400, "error_message": "Bad request"})
     return json({"status": 400, "error_message": "Bad request"})
