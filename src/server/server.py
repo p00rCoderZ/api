@@ -123,6 +123,33 @@ async def new_post(request):
             return json({"status": 200})
     return json({"status": 400, "error_message": "Bad request"})
 
+@app.route("/posts", methods=['POST'])
+async def posts(request):
+    ok, _ = extract_jwt(request.body, SERIAL)
+    if ok:
+        db_conn = Db.get_pool()
+        try:
+            conn = Db.get_pool()
+            rows = await conn.fetch("""SELECT * FROM posts""")
+            posts = []
+            for row in rows:
+                temp = {
+                    "id": row['id'],
+                    "type": row['type'],
+                    "title": row['title'],
+                    "user_id": row['user_id'],
+                    "content": row['content'],
+                }
+                q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
+                tags_rows = await conn.fetch(q.format(row['id']))
+                tags = [tag['tag_id'] for tag in tags_rows]
+                temp.update({"tags": tags})
+                posts.append(temp)
+            return json({"status": 200, "posts": posts})
+        except:
+            return json({"status": 400, "error_message": "Bad request"})
+    return json({"status": 400, "error_message": "Bad request"})
+
 async def main():
     await Db.init(DSN)
     db_conn = Db.get_pool()

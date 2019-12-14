@@ -158,7 +158,10 @@ class EndpointTest(unittest.TestCase):
             'tags': [1, 2]
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post)
-        self.assertEqual(r.json()['status'], 200)   
+        self.assertEqual(r.json()['status'], 200)
+        r = self._send_post_request(API_URL + 'posts', payload={})
+        self.assertEqual(r.json()['status'], 200)
+        print(r.json())   
 
     def test_new_post_invalid_data(self):
         self._insert_new_user()
