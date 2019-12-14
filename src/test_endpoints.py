@@ -46,9 +46,9 @@ class EndpointTest(unittest.TestCase):
         os.environ["SANIC_DBNAME"] = "_test"
         queries = ["DROP DATABASE IF EXISTS _test", "CREATE DATABASE _test" ]
         for q in queries:
-            subprocess.call(['psql', '-c {}'.format(q)])
+            subprocess.call(['psql', '-c {}'.format(q)], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         
-        subprocess.call(['psql', '-d_test', '-a', '-f/schema.sql'])
+        subprocess.call(['psql', '-d_test', '-a', '-f/schema.sql'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
     def test_root(self):
         r = requests.get('http://localhost:8000/')
