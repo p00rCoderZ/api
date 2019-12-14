@@ -3,7 +3,7 @@ from sanic import Sanic
 from sanic.response import json
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
-from validate import validate_user, extract_jwt
+from validate import validate_user, extract_jwt, validate_post
 
 import jwt
 import asyncio
@@ -97,6 +97,31 @@ async def show_users(request):
         except:
             return json({"status": 400, "error_message": "User does not exist", "users": []})
     return json({"status:": 400, "error_message": "Bad request", "users": []})
+
+@app.route("/new_post", methods=['POST'])
+async def new_post(request):
+    ok, payload = extract_jwt(request.body, SERIAL)
+    if ok and validate_post(payload):
+        db_conn = Db.get_pool()
+        try:
+            async with db_conn.acquire() as conn:
+                async with conn.transaction():
+                    q = """INSERT INTO posts (user_id, type, title, content) VALUES
+                        ({user_id}, '{type}', '{title}', '{content}') RETURNING id
+                    """
+                    print(q.format(**payload))
+                    new_post_id = await conn.fetchval(q.format(**payload))
+                    print(new_post_id)
+                    q = """INSERT INTO post_tags (post_id, tag_id) values ({}, {}) RETURNING *
+                    """
+                    for tag in payload['tags']:
+                        print('Inserting tags {}'.format(q.format(new_post_id, tag)))
+                        await conn.fetchval(q.format(new_post_id, tag))
+        except:
+            return json({"status": 400, "error_message": "Bad request"})
+        else:
+            return json({"status": 200})
+    return json({"status": 400, "error_message": "Bad request"})
 
 async def main():
     await Db.init(DSN)

@@ -6,6 +6,9 @@ def validate_user(data):
     keys = ['name', 'surname', 'email', 'password']
     return all(has_key_not_empty(k) for k in keys)
 
+def validate_post(data):
+    return True
+
 def extract_jwt(token, serial):
     try:
         payload = jwt.decode(token, serial, algorithm='HS256')

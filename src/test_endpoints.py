@@ -147,3 +147,26 @@ class EndpointTest(unittest.TestCase):
         self.assertEqual(len(r.json()["users"]), 1)
         del second_user['password']
         self.assertEqual(r.json()["users"][0], second_user)
+
+    def test_new_post(self):
+        self._insert_new_user()
+        post = {
+            "type": "seek",
+            "title": "Hello",
+            "user_id": 1,
+            "content": "Huge amount of content",
+            'tags': [1, 2]
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post)
+        self.assertEqual(r.json()['status'], 200)   
+
+    def test_new_post_invalid_data(self):
+        self._insert_new_user()
+        post = {
+            "type": "seek",
+            "title": "Hello",
+            "user_id": 1,
+            "content": "Huge amount of content",
+            'tags': [1, 2, 3]
+        }
+        self._send_post_request(API_URL + 'new_post', payload=post, response_code=400)
