@@ -139,6 +139,7 @@ async def posts(request):
                     "title": row['title'],
                     "user_id": row['user_id'],
                     "content": row['content'],
+                    "status": row['status']
                 }
                 q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
                 tags_rows = await conn.fetch(q.format(row['id']))
@@ -165,6 +166,7 @@ async def posts(request, id):
                     "title": row['title'],
                     "user_id": row['user_id'],
                     "content": row['content'],
+                    "status": row['status']
                 }
             q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
             tags_rows = await conn.fetch(q.format(row['id']))
