@@ -183,3 +183,14 @@ class EndpointTest(unittest.TestCase):
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post)
         r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})
+
+    def test_tags(self):
+        r = self._send_post_request(API_URL + 'tags', payload={})
+        
+        tags = r.json()['tags']
+        self.assertEqual(len(tags), 2)
+
+        self.assertEqual(
+            all(key in d.keys() for key in keys for d in tags), True
+        )
+

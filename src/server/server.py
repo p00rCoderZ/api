@@ -189,6 +189,19 @@ async def posts(request):
             return json({"status": 400, "error_message": "Bad request"})
     return json({"status": 400, "error_message": "Bad request"})
 
+@app.route("/tags", methods=['POST'])
+async def tags(request):
+    ok, _ = extract_jwt(request.body, SERIAL)
+    if ok:
+        try:
+            conn = Db.get_pool()
+            rows = await conn.fetch("""SELECT * FROM tags""")
+            tags = [{"id": tag['id'], "name": tag['name'], "description": ['description']} for tag in rows]
+            return json({"status": 200, "tags": tags})
+        except:
+            return json({"status": 400, "error_message": "Bad request", "tags": []})
+    return json({"status": 400, "error_message": "Bad request", "tags": []})
+
 async def main():
     await Db.init(DSN)
     db_conn = Db.get_pool()
