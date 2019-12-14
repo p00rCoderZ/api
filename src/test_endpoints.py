@@ -190,6 +190,7 @@ class EndpointTest(unittest.TestCase):
         tags = r.json()['tags']
         self.assertEqual(len(tags), 2)
 
+        keys = ["id", "name", "description"]
         self.assertEqual(
             all(key in d.keys() for key in keys for d in tags), True
         )
