@@ -1,61 +1,17 @@
 #! /usr/local/bin/python3
-from sanic import Sanic
-from sanic.response import json
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
-from validate import validate_user, extract_jwt
 
 import jwt
 import asyncio
 import toml
 
-app = Sanic()
-DBNAME = app.config['DBNAME'] if "DBNAME" in app.config else 'kup'
-SERIAL = 'serial' if "DBNAME" in app.config else toml.load('/secrets.toml')['serial']
-DSN = 'postgres://pros:foobar@postgres:5432/{}'.format(DBNAME)
- 
-@app.route("/jwt", methods=['POST'])
-async def test(request):
-    payload = request.body
-    ok, payload = extract_jwt(payload, SERIAL)
-    if ok:
-        return json({"status": 200, "payload": payload})
-    else:
-        return json({"status": 400, "error_message": "User not authenticated"})
+from app import app, DSN
 
-@app.route("/", methods=['GET'])
-async def root(request):
-    return json({"status": 200, "app": "K-UP API"})
-
-@app.route("/new_user", methods=['POST'])
-async def new_user(request):
-    request = request.json
-    if validate_user(request):
-        print('Inserting new user to db')
-        db_conn = Db.get_pool()
-        q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
-        try:
-            lets_see = await db_conn.fetchval(q.format(**request))
-            print(lets_see)
-            return json({"status": 200, "id": lets_see})
-        except UniqueViolationError as e:
-            return json({"status": 400, "error_msg": "User already exists"})
-    else:
-        return json({"status:": 400, "error_msg": "Bad request"})
-
-@app.route("/delete_user", methods=['POST'])
-async def delete_user(request):
-    request = request.json
-    q = "UPDATE users SET soft_delete='t' WHERE id={}"
-    db_conn = Db.get_pool()
-    try:
-        await db_conn.fetchval(q.format(request['id']))
-        return json({"status": 200})
-    except:
-        return json({"status": 400})
-
+import endpoints
 
 async def main():
+    endpoints.init(app)
     await Db.init(DSN)
     db_conn = Db.get_pool()
 
