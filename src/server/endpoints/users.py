@@ -21,7 +21,7 @@ async def new_user(request):
             try:
                 lets_see = await db_conn.fetchval(q.format(**payload))
                 print(lets_see)
-                return json(create_response(Responses.OK))
+                return json(create_response(Responses.CREATED))
             except UniqueViolationError as e:
                 return json(create_response(Responses.BAD_REQUEST, {"msg": "user already exists"}))
     return json(create_response(Responses.UNAUTHORIZED))

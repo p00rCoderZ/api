@@ -29,7 +29,7 @@ async def new_post(request):
         except:
             return json(create_response(Responses.BAD_REQUEST))
         else:
-            return json(create_response(Responses.OK))
+            return json(create_response(Responses.CREATED))
     return json(create_response(Responses.UNAUTHORIZED))
 
 async def posts(request):

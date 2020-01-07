@@ -5,7 +5,7 @@ from typing import Dict
 class Responses(Enum):
     OK = {
         "status": 200,
-        "msg": "sucess"
+        "msg": "success"
     }
 
     BAD_REQUEST = {
@@ -16,6 +16,11 @@ class Responses(Enum):
     UNAUTHORIZED = {
         "status": 401,
         "msg": "user not authorized"
+    }
+
+    CREATED = {
+        "status": 201,
+        "msg": "created"
     }
 
 def create_response(resp: Responses, add: dict={}) -> Dict:
