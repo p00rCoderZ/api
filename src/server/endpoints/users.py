@@ -3,6 +3,7 @@ from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
 from .validate import validate_user, extract_jwt, validate_post, validate_deletion
+from .response import Responses, create_response
 
 import jwt
 import asyncio
@@ -10,7 +11,6 @@ import asyncio
 import jwt
 import asyncio
 
-# @app.route("/new_user", methods=['POST'])
 async def new_user(request):
     ok, payload = extract_jwt(request.body, SERIAL)
     if ok:
@@ -21,12 +21,11 @@ async def new_user(request):
             try:
                 lets_see = await db_conn.fetchval(q.format(**payload))
                 print(lets_see)
-                return json({"status": 200, "id": lets_see})
+                return json(create_response(Responses.OK))
             except UniqueViolationError as e:
-                return json({"status": 400, "error_message": "User already exists"})
-    return json({"status:": 400, "error_message": "Bad request"})
+                return json(create_response(Responses.BAD_REQUEST, {"msg": "user already exists"}))
+    return json(create_response(Responses.UNAUTHORIZED))
 
-# @app.route("/delete_user", methods=['POST'])
 async def delete_user(request):
     ok, payload = extract_jwt(request.body, SERIAL)
     if ok:
@@ -34,12 +33,11 @@ async def delete_user(request):
         db_conn = Db.get_pool()
         try:
             await db_conn.fetchval(q.format(payload['id']))
-            return json({"status": 200})
+            return json(create_response(Responses.OK))
         except:
-            return json({"status": 400, "error_message": "User does not exist"})
-    return json({"status:": 400, "error_message": "Bad request"})
+            return json(create_response(Responses.BAD_REQUEST))
+    return json(create_response(Responses.UNAUTHORIZED))
 
-# @app.route("/users/<id:int>", methods=['POST'])
 async def show_user(request, id):
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
@@ -54,13 +52,11 @@ async def show_user(request, id):
                 "surname": user["surname"],
                 "email": user["email"]
             }
-            return json({"status": 200, "users": [user]})
+            return json(create_response(Responses.OK, {"users": [user]}))
         except:
-            raise
-            # return json({"status": 400, "error_message": "User does not exist", "users": []})
-    return json({"status:": 400, "error_message": "Bad request", "users": []})
+            return json(create_response(Responses.BAD_REQUEST, {"users": []}))
+    return json(create_response(Responses.UNAUTHORIZED))
 
-# @app.route("/users", methods=['POST'])
 async def show_users(request):
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
@@ -76,7 +72,7 @@ async def show_users(request):
                     "surname": user["surname"],
                     "email": user["email"]
                 })
-            return json({"status": 200, "users": users})
+            return json(create_response(Responses.OK, {"users": users}))
         except:
-            return json({"status": 400, "error_message": "User does not exist", "users": []})
-    return json({"status:": 400, "error_message": "Bad request", "users": []})
+            return json(create_response(Responses.BAD_REQUEST, {"msg": "User does not exist", "users": []}))
+    return json(create_response(Responses.UNAUTHORIZED))

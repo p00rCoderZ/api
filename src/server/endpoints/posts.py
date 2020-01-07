@@ -3,6 +3,7 @@ from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
 from .validate import validate_user, extract_jwt, validate_post, validate_deletion
+from .response import Responses, create_response
 
 import jwt
 import asyncio
@@ -26,10 +27,10 @@ async def new_post(request):
                         print('Inserting tags {}'.format(q.format(new_post_id, tag)))
                         await conn.fetchval(q.format(new_post_id, tag))
         except:
-            return json({"status": 400, "error_message": "Bad request"})
+            return json(create_response(Responses.BAD_REQUEST))
         else:
-            return json({"status": 200})
-    return json({"status": 400, "error_message": "Bad request"})
+            return json(create_response(Responses.OK))
+    return json(create_response(Responses.UNAUTHORIZED))
 
 async def posts(request):
     ok, _ = extract_jwt(request.body, SERIAL)
@@ -53,10 +54,10 @@ async def posts(request):
                 tags = [tag['tag_id'] for tag in tags_rows]
                 temp.update({"tags": tags})
                 posts.append(temp)
-            return json({"status": 200, "posts": posts})
+            return json(create_response(Responses.OK, {"posts": posts}))
         except:
-            return json({"status": 400, "error_message": "Bad request"})
-    return json({"status": 400, "error_message": "Bad request"})
+            return json(create_response(Responses.BAD_REQUEST, {"posts": []}))
+    return json(create_response(Responses.UNAUTHORIZED))
 
 async def post(request, id):
     ok, _ = extract_jwt(request.body, SERIAL)
@@ -79,10 +80,10 @@ async def post(request, id):
             tags = [tag['tag_id'] for tag in tags_rows]
             temp.update({"tags": tags})
 
-            return json({"status": 200, "posts": [temp]})
+            return json(create_response(Responses.OK, {"posts": [temp]}))
         except:
-            return json({"status": 400, "error_message": "Bad request", "posts": []})
-    return json({"status": 400, "error_message": "Bad request", "posts": []})
+            return json(create_response(Responses.BAD_REQUEST, {"posts": []}))
+    return json(create_response(Responses.UNAUTHORIZED))
 
 async def delete_post(request):
     ok, payload = extract_jwt(request.body, SERIAL)
@@ -91,7 +92,7 @@ async def delete_post(request):
         try:
             conn = Db.get_pool()
             row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id={}""".format(payload['id']))
-            return json({"status": 200})
+            return json(create_response(Responses.OK))
         except:
-            return json({"status": 400, "error_message": "Bad request"})
-    return json({"status": 400, "error_message": "Bad request"})
+            return json(create_response(Responses.BAD_REQUEST))
+    return json(create_response(Responses.UNAUTHORIZED))
