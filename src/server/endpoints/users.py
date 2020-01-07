@@ -24,6 +24,8 @@ async def new_user(request):
                 return json(create_response(Responses.CREATED))
             except UniqueViolationError as e:
                 return json(create_response(Responses.BAD_REQUEST, {"msg": "user already exists"}))
+            except:
+                return json(create_response(Responses.BAD_REQUEST))
     return json(create_response(Responses.UNAUTHORIZED))
 
 async def delete_user(request):
