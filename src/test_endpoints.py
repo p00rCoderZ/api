@@ -68,7 +68,7 @@ class EndpointTest(unittest.TestCase):
 
         return r
 
-    def _insert_new_user(self, user=None, response_code=200):
+    def _insert_new_user(self, user=None, response_code=201):
         user = DEFAULT_USER if user is None else user
         return self._send_post_request(API_URL + 'new_user', payload=user, response_code=response_code)
 
@@ -159,7 +159,7 @@ class EndpointTest(unittest.TestCase):
             "content": "Huge amount of content",
             'tags': [1, 2]
         }
-        r = self._send_post_request(API_URL + 'new_post', payload=post)
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
         r = self._send_post_request(API_URL + 'posts', payload={})
         post = r.json()['posts'][0]
         to_compare = {

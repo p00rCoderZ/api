@@ -1,4 +1,5 @@
-from sanic.response import json
+from sanic.response import json, HTTPResponse
+from sanic.request import Request
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
@@ -11,7 +12,7 @@ import asyncio
 import jwt
 import asyncio
 
-async def new_user(request):
+async def new_user(request: Request) -> HTTPResponse:
     ok, payload = extract_jwt(request.body, SERIAL)
     if ok:
         if validate_user(payload):
@@ -28,7 +29,7 @@ async def new_user(request):
                 return json(create_response(Responses.BAD_REQUEST))
     return json(create_response(Responses.UNAUTHORIZED))
 
-async def delete_user(request):
+async def delete_user(request: Request) -> HTTPResponse:
     ok, payload = extract_jwt(request.body, SERIAL)
     if ok:
         q = "UPDATE users SET soft_delete='t' WHERE id={}"
@@ -40,7 +41,7 @@ async def delete_user(request):
             return json(create_response(Responses.BAD_REQUEST))
     return json(create_response(Responses.UNAUTHORIZED))
 
-async def show_user(request, id):
+async def show_user(request: Request, id: int) -> HTTPResponse:
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
         q = "SELECT * FROM users WHERE id={}"
@@ -59,7 +60,7 @@ async def show_user(request, id):
             return json(create_response(Responses.BAD_REQUEST, {"users": []}))
     return json(create_response(Responses.UNAUTHORIZED))
 
-async def show_users(request):
+async def show_users(request: Request) -> HTTPResponse:
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
         q = "SELECT * FROM users"

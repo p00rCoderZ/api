@@ -21,7 +21,6 @@ async def test(request):
     else:
         return json({"status": 400, "error_message": "User not authenticated"})
 
-# @app.route("/", methods=['GET'])
 async def root(request):
     return json({"status": 200, "app": "K-UP API"})
 

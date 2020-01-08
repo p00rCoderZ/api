@@ -1,4 +1,5 @@
-from sanic.response import json
+from sanic.response import json, HTTPResponse
+from sanic.request import Request
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
@@ -8,7 +9,7 @@ from .response import Responses, create_response
 import jwt
 import asyncio
 
-async def tags(request):
+async def tags(request: Request) -> HTTPResponse:
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
         try:

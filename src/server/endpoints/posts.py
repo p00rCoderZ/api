@@ -1,4 +1,5 @@
-from sanic.response import json
+from sanic.response import json, HTTPResponse
+from sanic.request import Request
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
@@ -8,31 +9,33 @@ from .response import Responses, create_response
 import jwt
 import asyncio
 
-async def new_post(request):
-    ok, payload = extract_jwt(request.body, SERIAL)
-    if ok and validate_post(payload):
+from .common import jwt
+
+@jwt
+async def new_post(payload: dict) -> dict:
+    if validate_post(payload):
         db_conn = Db.get_pool()
         try:
             async with db_conn.acquire() as conn:
                 async with conn.transaction():
                     q = """INSERT INTO posts (user_id, type, title, content) VALUES
-                        ({user_id}, '{type}', '{title}', '{content}') RETURNING id
+                        ({user_id}, '{type}', '{title}', '{content}') RETURNING *
                     """
                     print(q.format(**payload))
                     new_post_id = await conn.fetchval(q.format(**payload))
                     print(new_post_id)
                     q = """INSERT INTO post_tags (post_id, tag_id) values ({}, {}) RETURNING *
                     """
+                    print(payload['tags'])
                     for tag in payload['tags']:
                         print('Inserting tags {}'.format(q.format(new_post_id, tag)))
                         await conn.fetchval(q.format(new_post_id, tag))
         except:
-            return json(create_response(Responses.BAD_REQUEST))
+            return create_response(Responses.BAD_REQUEST)
         else:
-            return json(create_response(Responses.CREATED))
-    return json(create_response(Responses.UNAUTHORIZED))
+            return create_response(Responses.CREATED)
 
-async def posts(request):
+async def posts(request: Request) -> HTTPResponse:
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
         db_conn = Db.get_pool()
@@ -59,7 +62,7 @@ async def posts(request):
             return json(create_response(Responses.BAD_REQUEST, {"posts": []}))
     return json(create_response(Responses.UNAUTHORIZED))
 
-async def post(request, id):
+async def post(request: Request, id : int) -> HTTPResponse:
     ok, _ = extract_jwt(request.body, SERIAL)
     if ok:
         db_conn = Db.get_pool()
@@ -85,13 +88,13 @@ async def post(request, id):
             return json(create_response(Responses.BAD_REQUEST, {"posts": []}))
     return json(create_response(Responses.UNAUTHORIZED))
 
-async def delete_post(request):
+async def delete_post(request: Request) -> HTTPResponse:
     ok, payload = extract_jwt(request.body, SERIAL)
     if ok and await validate_deletion(payload):
         db_conn = Db.get_pool()
         try:
             conn = Db.get_pool()
-            row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id={}""".format(payload['id']))
+            row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE ={}""".format(payload['']))
             return json(create_response(Responses.OK))
         except:
             return json(create_response(Responses.BAD_REQUEST))
