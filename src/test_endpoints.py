@@ -76,9 +76,9 @@ class EndpointTest(unittest.TestCase):
         r = self._send_post_request(API_URL + 'jwt', payload={"test": "test"})
         self.assertEqual(r.json()["payload"], {"test": "test"})
         bad_token = jwt.encode({"test": "test"}, key="badkey", algorithm='HS256')
-        r = self._send_post_request(API_URL + 'jwt', payload=bad_token, response_code=400, wrap_payload=False)
-        self.assertEqual(r.json()["status"], 400)
-        self.assertEqual(r.json()["error_message"], "User not authenticated")
+        r = self._send_post_request(API_URL + 'jwt', payload=bad_token, response_code=401, wrap_payload=False)
+        self.assertEqual(r.json()["status"], 401)
+        self.assertEqual(r.json()["msg"], "user not authorized")
 
     def test_db_clear_after_restart(self):
         q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
@@ -94,7 +94,7 @@ class EndpointTest(unittest.TestCase):
         self.cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
         self.assertEqual(self.cur.fetchone()[0], 1)
 
-        second_user = DEFAULT_USER
+        second_user = deepcopy(DEFAULT_USER)
         second_user.update({"email": "second_mail"})
         self._insert_new_user(second_user)
         self.cur.execute("SELECT count(*) FROM users")
@@ -103,7 +103,7 @@ class EndpointTest(unittest.TestCase):
     def test_same_user_twice(self):
         self._insert_new_user()
         r = self._insert_new_user(response_code=400)
-        self.assertEqual(r.json()["error_message"], "User already exists")
+        self.assertEqual(r.json()["msg"], "user already exists")
 
     def test_soft_delete(self):
         self._insert_new_user()
@@ -122,10 +122,10 @@ class EndpointTest(unittest.TestCase):
         r = self._send_post_request(API_URL + 'users', payload={})
         self.assertEqual(r.json()["status"], 200)
         self.assertEqual(len(r.json()["users"]), 1)
-        temp_user = DEFAULT_USER
+        temp_user = deepcopy(DEFAULT_USER)
         del temp_user['password']
         temp_user.update({"id": 1})
-        self.assertEqual(r.json()["users"][0], DEFAULT_USER)
+        self.assertEqual(r.json()["users"][0], temp_user)
 
     def test_specific_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
@@ -140,10 +140,10 @@ class EndpointTest(unittest.TestCase):
 
         r = self._send_post_request(API_URL + 'users/1', payload={})
         self.assertEqual(len(r.json()["users"]), 1)
-        first_user = DEFAULT_USER
+        first_user = deepcopy(DEFAULT_USER)
         del first_user['password']
         first_user.update({"id": 1})
-        self.assertEqual(r.json()["users"][0], DEFAULT_USER)
+        self.assertEqual(r.json()["users"][0], first_user)
 
         r = self._send_post_request(API_URL + 'users/2', payload={})
         self.assertEqual(len(r.json()["users"]), 1)
@@ -196,7 +196,7 @@ class EndpointTest(unittest.TestCase):
             "content": "Huge amount of content",
             'tags': [1, 2],
         }
-        r = self._send_post_request(API_URL + 'new_post', payload=post)
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
         r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})
 
     def test_tags(self):
