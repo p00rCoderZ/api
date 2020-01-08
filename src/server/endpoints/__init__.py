@@ -12,18 +12,16 @@ import asyncio
 from .users import new_user, delete_user, show_user, show_users
 from .posts import new_post, post, posts, delete_post
 from .tags import tags
+from .common import jwt, no_jwt
+from .response import create_response, Responses
 
-async def test(request):
-    payload = request.body
-    ok, payload = extract_jwt(payload, SERIAL)
-    if ok:
-        return json({"status": 200, "payload": payload})
-    else:
-        return json({"status": 400, "error_message": "User not authenticated"})
+@jwt
+async def test(payload: dict) -> dict:
+    return create_response(Responses.OK, {"payload": payload})
 
-# @app.route("/", methods=['GET'])
-async def root(request):
-    return json({"status": 200, "app": "K-UP API"})
+@no_jwt
+async def root(payload: dict) -> dict:
+    return create_response(Responses.OK, {"app": "K-UP API"})
 
 def init(app):
     app.add_route(root, '/', methods=['GET'])
