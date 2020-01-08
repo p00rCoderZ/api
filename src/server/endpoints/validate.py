@@ -1,6 +1,7 @@
 import jwt
 from jwt.exceptions import InvalidSignatureError, DecodeError
 from db import Db
+
 def validate_user(data):
     has_key_not_empty = lambda key: key in data and data[key]
 

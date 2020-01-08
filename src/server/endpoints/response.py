@@ -1,6 +1,4 @@
 from enum import Enum
-from collections import namedtuple
-from typing import Dict
 
 class Responses(Enum):
     OK = {
@@ -23,7 +21,7 @@ class Responses(Enum):
         "msg": "created"
     }
 
-def create_response(resp: Responses, add: dict={}) -> Dict:
+def create_response(resp: Responses, add: dict={}) -> dict:
     new_resp = resp.value
     new_resp.update(add)
     return new_resp

@@ -1,9 +1,4 @@
-from sanic.response import json, HTTPResponse
-from sanic.request import Request
-from asyncpg.exceptions import UniqueViolationError
 from db import Db
-from app import SERIAL
-from .validate import validate_user, extract_jwt, validate_post, validate_deletion
 from .response import Responses, create_response
 from .common import jwt
 
