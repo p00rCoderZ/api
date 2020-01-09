@@ -2,9 +2,10 @@ from db import Db
 from app import SERIAL
 from .validate import validate_post, validate_deletion
 from .response import Responses, create_response
-
 from .common import jwt
 
+
+from asyncpg.exceptions import ForeignKeyViolationError
 @jwt
 async def new_post(payload: dict) -> dict:
     if validate_post(payload):
@@ -22,7 +23,10 @@ async def new_post(payload: dict) -> dict:
                 print(payload['tags'])
                 for tag in payload['tags']:
                     print('Inserting tags {}'.format(q.format(new_post_id, tag)))
-                    await conn.fetchval(q.format(new_post_id, tag))
+                    try:
+                        await conn.fetchval(q.format(new_post_id, tag))
+                    except ForeignKeyViolationError as e:
+                        return create_response(Responses.BAD_REQUEST)
         return create_response(Responses.CREATED)
     else:
         return create_response(Responses.BAD_REQUEST)
