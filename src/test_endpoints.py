@@ -121,6 +121,18 @@ class UserEndpointTest(EndpointBase):
 
         self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
         self.assertEqual(self.cur.fetchone()[0], True)
+    
+    def test_soft_delete_twice(self):
+        self._insert_new_user()
+
+        r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
+        self.assertEqual(r.json()["status"], 200)
+
+        r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
+        self.assertEqual(r.json()["status"], 200)
+
+        self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
+        self.assertEqual(self.cur.fetchone()[0], True)
 
     def test_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})

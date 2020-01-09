@@ -14,13 +14,14 @@ def validate_post(payload: dict) -> bool:
 
 async def validate_deletion(payload: dict) -> bool:
     keys = ['id', 'user_id']
-    check_keys_in_payload(payload, keys)
+    if not check_keys_in_payload(payload, keys):
+        return False
     
     conn = Db.get_pool()
-    q = """ SELECT user_id FROM posts WHERE id={} """.format(data['id'])
+    q = """ SELECT user_id FROM posts WHERE id={} """.format(payload['id'])
     post_author_id = await conn.fetch(q)
     post_author_id = post_author_id[0]['user_id']
-    return post_author_id == data['user_id']
+    return post_author_id == payload['user_id']
 
 def extract_jwt(token: Union[str, bytes], serial: Union[str, bytes]) -> Tuple[bool, dict]:
     try:
