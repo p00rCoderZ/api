@@ -4,12 +4,11 @@ from sanic.response import json
 from asyncpg.exceptions import UniqueViolationError
 from db import Db
 from app import SERIAL
-from .validate import validate_user, extract_jwt, validate_post, validate_deletion
 
 import jwt
 import asyncio
 
-from .users import new_user, delete_user, show_user, show_users
+from .users import new_user, delete_user, show_user, show_users, login
 from .posts import new_post, post, posts, delete_post
 from .tags import tags
 from .common import jwt, no_jwt
@@ -27,6 +26,7 @@ def init(app):
     app.add_route(root, '/', methods=['GET'])
     app.add_route(test, '/jwt', methods=['POST'])
     app.add_route(new_user, '/new_user', methods=['POST'])
+    app.add_route(login, '/login', methods=['POST'])
     app.add_route(delete_user, "/delete_user", methods=['POST'])
     app.add_route(show_user, "/users/<id:int>", methods=['POST'])
     app.add_route(show_users, "/users", methods=['POST'])

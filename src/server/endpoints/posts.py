@@ -1,6 +1,6 @@
 from db import Db
 from app import SERIAL
-from .validate import validate_user, validate_post, validate_deletion
+from .validate import validate_post, validate_deletion
 from .response import Responses, create_response
 
 from .common import jwt
