@@ -34,7 +34,7 @@ async def login(payload: dict) -> dict:
             id, hashed_passwd = row['id'], row['password']
             if pwd_context.verify(payload["password"], hashed_passwd):
                 return create_response(Responses.OK, {"id": id})
-                
+
         return create_response(Responses.BAD_REQUEST, {"msg": "incorrect login"})
     else:
         return create_response(Responses.BAD_REQUEST)
@@ -51,15 +51,17 @@ async def show_user(payload: dict, id: int) -> dict:
     q = "SELECT * FROM users WHERE id={}"
     db_conn = Db.get_pool()
     user = await db_conn.fetch(q.format(id))
-    user = user[0]
-    user = {
-        "id": user["id"],
-        "name": user["name"],
-        "surname": user["surname"],
-        "email": user["email"]
-    }
-    return create_response(Responses.OK, {"users": [user]})
-
+    if user:
+        user = user[0]
+        user = {
+            "id": user["id"],
+            "name": user["name"],
+            "surname": user["surname"],
+            "email": user["email"]
+        }
+        return create_response(Responses.OK, {"users": [user]})
+    return create_response(Responses.BAD_REQUEST)
+    
 @jwt
 async def show_users(request: dict) -> dict:
     q = "SELECT * FROM users"

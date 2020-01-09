@@ -136,6 +136,10 @@ class UserEndpointTest(EndpointBase):
         temp_user.update({"id": 1})
         self._perform_login(password=DEFAULT_USER["password"], email=DEFAULT_USER["email"])
 
+    def test_user_not_existing(self):
+        r = self._send_post_request(API_URL + 'users/1', payload={}, response_code=400)
+
+
     def test_specific_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
         self.assertEqual(r.json()["status"], 200)

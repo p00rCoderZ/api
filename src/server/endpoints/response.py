@@ -21,6 +21,11 @@ class Responses(Enum):
         "msg": "created"
     }
 
+    INTERNAL = {
+        "status": 500,
+        "msg": "internal server error"
+    }
+
 def create_response(resp: Responses, add: dict={}) -> dict:
     new_resp = resp.value
     new_resp.update(add)
