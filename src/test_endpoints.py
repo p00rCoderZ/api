@@ -18,7 +18,7 @@ DEFAULT_USER = {
     "email": 'email',
     "password": 'passwd'
 }
-class EndpointTest(unittest.TestCase):
+class EndpointBase(unittest.TestCase):
     def setUp(self):
         self._restart_test_db()
         self.sb = subprocess.Popen('/usr/api/src/server/server.py')
@@ -50,12 +50,6 @@ class EndpointTest(unittest.TestCase):
         
         subprocess.call(['psql', '-d_test', '-a', '-f/schema.sql'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-    def test_root(self):
-        r = requests.get('http://localhost:8000/')
-        payload = r.json()
-        self.assertEqual(payload["status"], 200)
-        self.assertEqual(payload["app"], "K-UP API")
-
     def _wrap_payload(self, payload):
         return jwt.encode(payload, 'serial', algorithm='HS256')
 
@@ -71,6 +65,19 @@ class EndpointTest(unittest.TestCase):
     def _insert_new_user(self, user=None, response_code=201):
         user = DEFAULT_USER if user is None else user
         return self._send_post_request(API_URL + 'new_user', payload=user, response_code=response_code)
+
+    def _perform_login(self, password='def_pas', email='def_mail', response_code=200):
+        r = self._send_post_request(API_URL + 'login', payload={"email": email, "password": password}, response_code=response_code)
+        if response_code == 200:
+            self.assertTrue("id" in r.json())
+        return r
+
+class EndpointTest(EndpointBase):
+    def test_root(self):
+        r = requests.get('http://localhost:8000/')
+        payload = r.json()
+        self.assertEqual(payload["status"], 200)
+        self.assertEqual(payload["app"], "K-UP API")
 
     def test_jwt(self):
         r = self._send_post_request(API_URL + 'jwt', payload={"test": "test"})
@@ -88,6 +95,7 @@ class EndpointTest(unittest.TestCase):
         self.cur.execute("SELECT id FROM users ORDER BY id DESC LIMIT 1")
         self.assertEqual(self.cur.fetchone()[0], 1)
 
+class UserEndpointTest(EndpointBase):
     def test_new_user(self):
         self._insert_new_user()
 
@@ -113,11 +121,24 @@ class EndpointTest(unittest.TestCase):
 
         self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
         self.assertEqual(self.cur.fetchone()[0], True)
+    
+    def test_soft_delete_twice(self):
+        self._insert_new_user()
+
+        r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
+        self.assertEqual(r.json()["status"], 200)
+
+        r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
+        self.assertEqual(r.json()["status"], 200)
+
+        self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
+        self.assertEqual(self.cur.fetchone()[0], True)
 
     def test_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
         self.assertEqual(r.json()["status"], 200)
         self.assertEqual(r.json()["users"], [])
+        
         self._insert_new_user()
         r = self._send_post_request(API_URL + 'users', payload={})
         self.assertEqual(r.json()["status"], 200)
@@ -125,7 +146,11 @@ class EndpointTest(unittest.TestCase):
         temp_user = deepcopy(DEFAULT_USER)
         del temp_user['password']
         temp_user.update({"id": 1})
-        self.assertEqual(r.json()["users"][0], temp_user)
+        self._perform_login(password=DEFAULT_USER["password"], email=DEFAULT_USER["email"])
+
+    def test_user_not_existing(self):
+        r = self._send_post_request(API_URL + 'users/1', payload={}, response_code=400)
+
 
     def test_specific_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
@@ -150,6 +175,28 @@ class EndpointTest(unittest.TestCase):
         del second_user['password']
         self.assertEqual(r.json()["users"][0], second_user)
 
+    def test_login(self):
+        self._insert_new_user()
+        passwd, email = DEFAULT_USER['password'], DEFAULT_USER['email']
+        self._perform_login(password=passwd, email=email)
+
+    def test_incorrect_login(self):
+        r = self._perform_login(response_code=400)
+        self.assertEqual(r.json()['msg'], 'incorrect login')
+    
+    def test_incorrect_login_password(self):
+        self._insert_new_user()
+
+        r = self._perform_login(password=DEFAULT_USER["password"], response_code=400)
+        self.assertEqual(r.json()['msg'], 'incorrect login')
+
+    def test_incorrect_login_email(self):
+        self._insert_new_user()
+
+        r = self._perform_login(password=DEFAULT_USER["email"], response_code=400)
+        self.assertEqual(r.json()['msg'], 'incorrect login')
+
+class PostsEndpointTest(EndpointBase):
     def test_new_post(self):
         self._insert_new_user()
         post = {
@@ -199,6 +246,7 @@ class EndpointTest(unittest.TestCase):
         r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
         r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})
 
+class TagEndpointTest(EndpointBase):
     def test_tags(self):
         r = self._send_post_request(API_URL + 'tags', payload={})
         
@@ -209,4 +257,3 @@ class EndpointTest(unittest.TestCase):
         self.assertEqual(
             all(key in d.keys() for key in keys for d in tags), True
         )
-
