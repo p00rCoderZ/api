@@ -38,6 +38,71 @@ Note: All endpoints from now on accept data 'wrapped' in jwt tokens. The actual 
 
 ```
 
+```
+# endpoint
+/delete_user [POST]
+
+# payload
+{
+    "id": int
+}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success"
+}
+
+```
+
+```
+# endpoint
+/show_user/<id:int> [POST]
+
+# payload {}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+    "users": [user] # list contains one user
+}
+
+# user type
+user = {
+    "id": int,
+    "name": str,
+    "surname":  str,
+    "email": str
+}
+
+```
+
+```
+# endpoint
+/show_user [POST]
+
+# payload {}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+    "users": [user, user, user] # list contains zero or more users
+}
+
+# user type
+user = {
+    "id": int,
+    "name": str,
+    "surname":  str,
+    "email": str
+}
+
+```
+
+
+
 ### Error codes
 
 #### Bad Request
@@ -53,5 +118,13 @@ Note: All endpoints from now on accept data 'wrapped' in jwt tokens. The actual 
 {
     "status": 401,
     "msg": "user not authorized"
+}
+```
+
+#### Internal Server Error
+```
+{
+    "status": 503,
+    "msg"
 }
 ```
