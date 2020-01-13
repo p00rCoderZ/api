@@ -100,7 +100,28 @@ user = {
 }
 
 ```
+```
+# endpoint
+/login [POST]
 
+# payload 
+{
+    "email": str,
+    "password": str
+}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+    "id": int # list contains zero or more users
+}
+# on Err
+{
+    "status": 400,
+    "msg": "incorrect login"
+}
+```
 
 
 ### Error codes
