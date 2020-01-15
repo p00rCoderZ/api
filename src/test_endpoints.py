@@ -196,6 +196,21 @@ class UserEndpointTest(EndpointBase):
         r = self._perform_login(password=DEFAULT_USER["email"], response_code=400)
         self.assertEqual(r.json()['msg'], 'incorrect login')
 
+    def test_invalid_data_login(self):
+        r = requests.post(API_URL + 'login', data=self._wrap_payload({"id": 1}))
+        self.assertEqual(r.json()["status"], 400)
+
+        r = requests.post(API_URL + 'login', data=self._wrap_payload({"id": "pls break"}))
+        self.assertEqual(r.json()["status"], 400)
+        
+        r = requests.post(API_URL + 'login', data=self._wrap_payload({"email": "'get rekt'"}))
+        self.assertEqual(r.json()["status"], 400)
+
+        r = requests.post(API_URL + 'login', data=self._wrap_payload({"password": "42",  "email": "'get rekt'"}))
+        self.assertEqual(r.json()["status"], 400)
+        
+        r = requests.post(API_URL + 'login', data=self._wrap_payload({"password": 42,  "email": "'get rekt'"}))
+        self.assertEqual(r.json()["status"], 400)
 class PostsEndpointTest(EndpointBase):
     def test_new_post(self):
         self._insert_new_user()
