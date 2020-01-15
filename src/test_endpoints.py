@@ -13,10 +13,11 @@ API_PORT=8000
 API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
 DEFAULT_USER = {
-    "name": 'test',
-    "surname": "surname",
+    "nick": 'test',
     "email": 'email',
-    "password": 'passwd'
+    "password": 'passwd',
+    "name": None,
+    "surname": None
 }
 class EndpointBase(unittest.TestCase):
     def setUp(self):
@@ -88,7 +89,7 @@ class EndpointTest(EndpointBase):
         self.assertEqual(r.json()["msg"], "user not authorized")
 
     def test_db_clear_after_restart(self):
-        q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
+        q = "INSERT INTO users (nick, name, surname, email, password) VALUES ('{nick}' ,'{name}', '{surname}', '{email}', '{password}') RETURNING *"
         user = DEFAULT_USER
         self.cur.execute(q.format(**user))
 
@@ -103,7 +104,7 @@ class UserEndpointTest(EndpointBase):
         self.assertEqual(self.cur.fetchone()[0], 1)
 
         second_user = deepcopy(DEFAULT_USER)
-        second_user.update({"email": "second_mail"})
+        second_user.update({"email": "second_mail", "nick": "nick"})
         self._insert_new_user(second_user)
         self.cur.execute("SELECT count(*) FROM users")
         self.assertEqual(self.cur.fetchone()[0], 2)
@@ -151,7 +152,6 @@ class UserEndpointTest(EndpointBase):
     def test_user_not_existing(self):
         r = self._send_post_request(API_URL + 'users/1', payload={}, response_code=400)
 
-
     def test_specific_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
         self.assertEqual(r.json()["status"], 200)
@@ -160,7 +160,7 @@ class UserEndpointTest(EndpointBase):
         self._insert_new_user()
 
         second_user = deepcopy(DEFAULT_USER)
-        second_user.update({"email": "second_email", "id": 2})
+        second_user.update({"email": "second_email", "nick": "second_nick", "id": 2})
         self._insert_new_user(second_user)
 
         r = self._send_post_request(API_URL + 'users/1', payload={})
