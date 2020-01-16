@@ -9,12 +9,12 @@ from passlib.apps import custom_app_context as pwd_context
 
 @jwt
 async def new_user(payload: dict) -> dict:
-    keys = ['name', 'surname', 'email', 'password']
+    keys = ['nick', 'email', 'password']
     if check_keys_in_payload(payload, keys):
         db_conn = Db.get_pool()
         hash = pwd_context.hash(payload["password"])
         payload.update({"password": hash})
-        q = "INSERT INTO users (name, surname, email, password) VALUES ('{name}', '{surname}', '{email}', '{password}') RETURNING *"
+        q = "INSERT INTO users (nick, email, password) VALUES ('{nick}', '{email}', '{password}') RETURNING *"
         try:
             lets_see = await db_conn.fetchval(q.format(**payload))
             return create_response(Responses.CREATED)
@@ -55,6 +55,7 @@ async def show_user(payload: dict, id: int) -> dict:
         user = user[0]
         user = {
             "id": user["id"],
+            "nick": user["nick"],
             "name": user["name"],
             "surname": user["surname"],
             "email": user["email"]
@@ -71,6 +72,7 @@ async def show_users(request: dict) -> dict:
     for user in rows:
         users.append({
             "id": user["id"],
+            "nick": user["nick"],
             "name": user["name"],
             "surname": user["surname"],
             "email": user["email"]

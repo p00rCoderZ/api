@@ -159,8 +159,9 @@ ALTER SEQUENCE public.tags_id_seq OWNED BY public.tags.id;
 
 CREATE TABLE public.users (
     id integer NOT NULL,
-    name character varying NOT NULL,
-    surname character varying NOT NULL,
+    nick character varying NOT NULL,
+    name character varying,
+    surname character varying,
     email character varying NOT NULL,
     password character varying NOT NULL,
     soft_delete boolean DEFAULT false NOT NULL
@@ -249,7 +250,7 @@ COPY public.tags (id, name, description) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pros
 --
 
-COPY public.users (id, name, surname, email, password, soft_delete) FROM stdin;
+COPY public.users (id, nick, name, surname, email, password, soft_delete) FROM stdin;
 \.
 
 
@@ -327,6 +328,14 @@ ALTER TABLE ONLY public.tags
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- Name: users users_nick_key; Type: CONSTRAINT; Schema: public; Owner: pros
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_nick_key UNIQUE (nick);
 
 
 --
