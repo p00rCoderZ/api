@@ -123,6 +123,120 @@ user = {
 }
 ```
 
+```
+# endpoint
+/tags [POST]
+
+# payload {}
+
+# on OK
+{
+    "status": 200,
+    "tags": [tag, tag, tag, tag]
+}
+
+# tag type
+tag = {
+    "id": int,
+    "name": str,
+    "description": str
+}
+```
+
+
+```
+# endpoint
+/new_post [POST]
+
+# payload 
+{
+    "user_id": str,
+    "type": str, # 'seek' or 'offer' 
+    "title": str,
+    "content": str,
+    "tags": [] # List of ids of tags - might be null
+}
+
+# on OK
+{
+    "status": 201,
+    "msg": "created",
+}
+# on Err
+{
+    "status": 400,
+    "msg": "bad request"
+}
+```
+
+```
+# endpoint
+/posts/<id:int> [POST]
+
+# payload {}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+    "users": [post] # list contains one user
+}
+
+# post type
+post = {
+    "id": str,
+    "user_id": str,
+    "type": str, # 'seek' or 'offer' 
+    "title": str,
+    "content": str,
+    "tags": [] # List of ids of tags - might be null
+}
+
+```
+
+```
+# endpoint
+/posts [POST]
+
+# payload {}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+    "users": [post, post] # list contains zero or more users
+}
+
+# post type
+post = {
+    "id": str,
+    "user_id": str,
+    "type": str, # 'seek' or 'offer' 
+    "title": str,
+    "content": str,
+    "tags": [] # List of ids of tags - might be null
+}
+
+```
+
+```
+# endpoint
+/delete_post [POST]
+
+# payload {
+    "id": int
+}
+
+# on OK
+{
+    "status": 200,
+    "msg": "success",
+}
+
+
+```
+
+
 
 ### Error codes
 
