@@ -8,7 +8,7 @@ from app import SERIAL
 import jwt
 import asyncio
 
-from .users import new_user, delete_user, show_user, show_users, login
+from .users import new_user, delete_user, show_user, show_users, login, nick_exists, email_exists
 from .posts import new_post, post, posts, delete_post
 from .tags import tags
 from .common import jwt, no_jwt
@@ -35,3 +35,6 @@ def init(app):
     app.add_route(post, "/posts/<id:int>", methods=['POST'])
     app.add_route(posts, "/posts", methods=['POST'])
     app.add_route(tags, "/tags", methods=['POST'])
+    app.add_route(nick_exists, "/nick_exists", methods=['POST'])
+    app.add_route(email_exists, "/email_exists", methods=['POST'])
+    

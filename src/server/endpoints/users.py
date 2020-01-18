@@ -40,6 +40,26 @@ async def login(payload: dict) -> dict:
         return create_response(Responses.BAD_REQUEST)
 
 @jwt
+async def nick_exists(payload: dict) -> dict:
+    if check_keys_in_payload(payload, ['nick']):
+        db_conn = Db.get_pool()
+        q = "SELECT count(*) FROM users WHERE nick='{}'"
+        row = await db_conn.fetch(q.format(payload['nick']))
+        if row:
+            count = row[0][0]
+            return create_response(Responses.OK, {"exists": count >= 1})
+
+@jwt
+async def email_exists(payload: dict) -> dict:
+    if check_keys_in_payload(payload, ['email']):
+        db_conn = Db.get_pool()
+        q = "SELECT count(*) FROM users WHERE email='{}'"
+        row = await db_conn.fetch(q.format(payload['email']))
+        if row:
+            count = row[0][0]
+            return create_response(Responses.OK, {"exists": count >= 1})
+
+@jwt
 async def delete_user(payload: dict) -> dict:
     q = "UPDATE users SET soft_delete='t' WHERE id={}"
     db_conn = Db.get_pool()

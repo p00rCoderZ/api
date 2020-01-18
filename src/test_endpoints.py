@@ -211,6 +211,25 @@ class UserEndpointTest(EndpointBase):
         
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"password": 42,  "email": "'get rekt'"}))
         self.assertEqual(r.json()["status"], 400)
+    
+    def test_nick_exists(self):
+        r = self._send_post_request(API_URL + 'nick_exists', payload={"nick": "test"})
+        self.assertFalse(r.json()["exists"])
+        self._insert_new_user()
+        r = self._send_post_request(API_URL + 'nick_exists', payload={"nick": "test"})
+        self.assertTrue(r.json()["exists"])
+        r = self._send_post_request(API_URL + 'nick_exists', payload={"nick": "test2"})
+        self.assertFalse(r.json()["exists"])
+
+    def test_email_exists(self):
+        r = self._send_post_request(API_URL + 'email_exists', payload={"email": "email"})
+        self.assertFalse(r.json()["exists"])
+        self._insert_new_user()
+        r = self._send_post_request(API_URL + 'email_exists', payload={"email": "email"})
+        self.assertTrue(r.json()["exists"])
+        r = self._send_post_request(API_URL + 'email_exists', payload={"email": "email2"})
+        self.assertFalse(r.json()["exists"])
+
 class PostsEndpointTest(EndpointBase):
     def test_new_post(self):
         self._insert_new_user()
