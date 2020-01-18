@@ -162,6 +162,9 @@ tag = {
     "status": 201,
     "msg": "created",
 }
+
+# TODO: add id of post as a response from API
+
 # on Err
 {
     "status": 400,
