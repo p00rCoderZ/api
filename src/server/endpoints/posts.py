@@ -20,13 +20,14 @@ async def new_post(payload: dict) -> dict:
                 print(new_post_id)
                 q = """INSERT INTO post_tags (post_id, tag_id) values ({}, {}) RETURNING *
                 """
-                print(payload['tags'])
-                for tag in payload['tags']:
-                    print('Inserting tags {}'.format(q.format(new_post_id, tag)))
-                    try:
-                        await conn.fetchval(q.format(new_post_id, tag))
-                    except ForeignKeyViolationError as e:
-                        return create_response(Responses.BAD_REQUEST)
+                if 'tags' in payload:
+                    print(payload['tags'])
+                    for tag in payload['tags']:
+                        print('Inserting tags {}'.format(q.format(new_post_id, tag)))
+                        try:
+                            await conn.fetchval(q.format(new_post_id, tag))
+                        except ForeignKeyViolationError as e:
+                            return create_response(Responses.BAD_REQUEST)
         return create_response(Responses.CREATED)
     else:
         return create_response(Responses.BAD_REQUEST)

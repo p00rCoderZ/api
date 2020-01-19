@@ -280,6 +280,55 @@ class PostsEndpointTest(EndpointBase):
         r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
         r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})
 
+    def test_post_without_tags(self):
+        self._insert_new_user()
+        r = self._perform_login(email=DEFAULT_USER["email"], password=DEFAULT_USER["password"])
+        id = r.json()['id']
+        post = {
+            "type": "seek",
+            "title": "Hello",
+            "user_id": id,
+            "content": "Huge amount of content",
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+
+        to_compare = {
+            "id": 1,
+            "type": "seek",
+            "title": "Hello",
+            "user_id": id,
+            "content": "Huge amount of content",
+            'tags': [],
+            'status': 'active'
+        }
+        r = self._send_post_request(API_URL + 'posts/1', payload={})
+        post = r.json()['posts'][0]
+
+        self.assertEqual(post, to_compare)
+        post = {
+            "type": "offer",
+            "title": "Hello2",
+            "user_id": id,
+            "content": "Huge amount of content",
+            "tags": []
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+
+        to_compare = {
+            "id": 2,
+            "type": "offer",
+            "title": "Hello2",
+            "user_id": id,
+            "content": "Huge amount of content",
+            'tags': [],
+            'status': 'active'
+        }
+        r = self._send_post_request(API_URL + 'posts/2', payload={})
+        post = r.json()['posts'][0]
+
+        self.assertEqual(post, to_compare)
+
+
 class TagEndpointTest(EndpointBase):
     def test_tags(self):
         r = self._send_post_request(API_URL + 'tags', payload={})
