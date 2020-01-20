@@ -3,7 +3,18 @@ from app import SERIAL
 from .validate import validate_post, validate_deletion
 from .response import Responses, create_response
 from .common import jwt
+from datetime import datetime
 
+def post_from_db(row):
+    return {
+        "id": row['id'],
+        "type": row['type'],
+        "title": row['title'],
+        "user_id": row['user_id'],
+        "content": row['content'],
+        "status": row['status'],
+        "date": row["datetime"]
+    }
 
 from asyncpg.exceptions import ForeignKeyViolationError
 @jwt
@@ -37,14 +48,7 @@ async def posts(payload: dict) -> dict:
     rows = await conn.fetch("""SELECT * FROM posts""")
     posts = []
     for row in rows:
-        temp = {
-            "id": row['id'],
-            "type": row['type'],
-            "title": row['title'],
-            "user_id": row['user_id'],
-            "content": row['content'],
-            "status": row['status']
-        }
+        temp = post_from_db(row)
         q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
         tags_rows = await conn.fetch(q.format(row['id']))
         tags = [tag['tag_id'] for tag in tags_rows]
@@ -57,14 +61,7 @@ async def post(payload: dict, id: int) -> dict:
     conn = Db.get_pool()
     row = await conn.fetch("""SELECT * FROM posts WHERE id={}""".format(id))
     row = row[0]
-    temp = {
-            "id": row['id'],
-            "type": row['type'],
-            "title": row['title'],
-            "user_id": row['user_id'],
-            "content": row['content'],
-            "status": row['status']
-        }
+    temp = post_from_db(row)
     q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
     tags_rows = await conn.fetch(q.format(row['id']))
     tags = [tag['tag_id'] for tag in tags_rows]

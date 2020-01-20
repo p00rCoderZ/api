@@ -9,6 +9,7 @@ import json
 import jwt
 from urllib3.exceptions import NewConnectionError
 from copy import deepcopy
+from datetime import datetime
 API_PORT=8000
 API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
@@ -252,9 +253,18 @@ class PostsEndpointTest(EndpointBase):
             'tags': [1, 2],
             'status': 'active'
         }
+        date = deepcopy(post['date'])
+        del post['date']
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
+
         r = self._send_post_request(API_URL + 'posts/1', payload={})
         post = r.json()['posts'][0]
+        date = deepcopy(post['date'])
+        del post['date']
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
 
     def test_new_post_invalid_data(self):
