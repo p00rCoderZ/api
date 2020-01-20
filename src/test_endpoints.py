@@ -242,6 +242,7 @@ class PostsEndpointTest(EndpointBase):
             'tags': [1, 2]
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+        self.assertEqual(r.json()["id"], 1)
         r = self._send_post_request(API_URL + 'posts', payload={})
         post = r.json()['posts'][0]
         to_compare = {

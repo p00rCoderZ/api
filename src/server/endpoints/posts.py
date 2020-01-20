@@ -39,7 +39,7 @@ async def new_post(payload: dict) -> dict:
                             await conn.fetchval(q.format(new_post_id, tag))
                         except ForeignKeyViolationError as e:
                             return create_response(Responses.BAD_REQUEST)
-        return create_response(Responses.CREATED)
+        return create_response(Responses.CREATED, {"id": new_post_id})
     else:
         return create_response(Responses.BAD_REQUEST)
 
