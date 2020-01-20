@@ -1,5 +1,6 @@
 from enum import Enum
-
+from sanic import response
+import copy
 class Responses(Enum):
     OK = {
         "status": 200,
@@ -26,7 +27,11 @@ class Responses(Enum):
         "msg": "internal server error"
     }
 
-def create_response(resp: Responses, add: dict={}) -> dict:
-    new_resp = resp.value
+def create_response(resp: Responses, add: dict={}) -> response.HTTPResponse:
+    new_resp = copy.deepcopy(resp.value)
+    print(new_resp)
+    status = copy.deepcopy(new_resp["status"])
+    del new_resp["status"]
     new_resp.update(add)
-    return new_resp
+    print("status: {}".format(status))
+    return response.json(body=new_resp, status=status)
