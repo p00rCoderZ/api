@@ -192,7 +192,8 @@ post = {
     "type": str, # 'seek' or 'offer' 
     "title": str,
     "content": str,
-    "tags": [] # List of ids of tags - might be null
+    "tags": [] # List of ids of tags - might be null,
+    "date": timestamp # seconds since epoch
 }
 
 ```
@@ -217,7 +218,8 @@ post = {
     "type": str, # 'seek' or 'offer' 
     "title": str,
     "content": str,
-    "tags": [] # List of ids of tags - might be null
+    "tags": [] # List of ids of tags - might be null,
+    "date": timestamp # seconds since epoch
 }
 
 ```
