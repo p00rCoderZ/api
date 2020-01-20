@@ -26,7 +26,7 @@ async def new_post(payload: dict) -> dict:
                 q = """INSERT INTO posts (user_id, type, title, content) VALUES
                     ($1, $2, $3, $4) RETURNING *
                 """
-                new_post_id = await conn.fetchval(q, payload["user_id"], payload["type"],
+                new_post_id = await conn.fetchval(q, int(payload["user_id"]), payload["type"],
                     payload["title"], payload["content"]
                 )
                 q = """INSERT INTO post_tags (post_id, tag_id) values ($1, $2) RETURNING *
