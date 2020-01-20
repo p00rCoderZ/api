@@ -313,8 +313,13 @@ class PostsEndpointTest(EndpointBase):
         }
         r = self._send_post_request(API_URL + 'posts/1', payload={})
         post = r.json()['posts'][0]
-
+        
+        date = deepcopy(post["date"])
+        del post["date"]
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
+        
         post = {
             "type": "offer",
             "title": "Hello2",
@@ -336,6 +341,10 @@ class PostsEndpointTest(EndpointBase):
         r = self._send_post_request(API_URL + 'posts/2', payload={})
         post = r.json()['posts'][0]
 
+        date = deepcopy(post["date"])
+        del post["date"]
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
 
 
