@@ -11,19 +11,17 @@ def jwt(f):
         ok, payload = extract_jwt(request.body, SERIAL)
         if ok:
             try:
-                return json(await f(payload, *args, **kwargs))
+                return await f(payload, *args, **kwargs)
             except Exception as e:
-                print(traceback.format_exc())
-                return json(create_response(Responses.INTERNAL))
+                return create_response(Responses.INTERNAL, {"traceback": traceback.format_exc()})
         else:
-            return json(create_response(Responses.UNAUTHORIZED))
+            return create_response(Responses.UNAUTHORIZED)
     return wrapper
 
 def no_jwt(f):
     async def wrapper(request: Request, *args, **kwargs) -> HTTPResponse:
         try:
-            return json(await f(request.body, *args, **kwargs))
+            return await f(request.body, *args, **kwargs)
         except Exception as e:
-            print(traceback.format_exc())
-            return json(create_response(Responses.INTERNAL))
+            return create_response(Responses.INTERNAL, {"traceback": traceback.format_exc()})
     return wrapper

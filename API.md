@@ -161,6 +161,7 @@ tag = {
 {
     "status": 201,
     "msg": "created",
+    "id": int #id of newly created post
 }
 
 # TODO: add id of post as a response from API

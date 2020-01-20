@@ -3,7 +3,18 @@ from app import SERIAL
 from .validate import validate_post, validate_deletion
 from .response import Responses, create_response
 from .common import jwt
+from datetime import datetime
 
+def post_from_db(row):
+    return {
+        "id": row['id'],
+        "type": row['type'],
+        "title": row['title'],
+        "user_id": row['user_id'],
+        "content": row['content'],
+        "status": row['status'],
+        "date": row["datetime"]
+    }
 
 from asyncpg.exceptions import ForeignKeyViolationError
 @jwt
@@ -13,21 +24,20 @@ async def new_post(payload: dict) -> dict:
         async with db_conn.acquire() as conn:
             async with conn.transaction():
                 q = """INSERT INTO posts (user_id, type, title, content) VALUES
-                    ({user_id}, '{type}', '{title}', '{content}') RETURNING *
+                    ($1, $2, $3, $4) RETURNING *
                 """
-                print(q.format(**payload))
-                new_post_id = await conn.fetchval(q.format(**payload))
-                print(new_post_id)
-                q = """INSERT INTO post_tags (post_id, tag_id) values ({}, {}) RETURNING *
+                new_post_id = await conn.fetchval(q, payload["user_id"], payload["type"],
+                    payload["title"], payload["content"]
+                )
+                q = """INSERT INTO post_tags (post_id, tag_id) values ($1, $2) RETURNING *
                 """
-                print(payload['tags'])
-                for tag in payload['tags']:
-                    print('Inserting tags {}'.format(q.format(new_post_id, tag)))
-                    try:
-                        await conn.fetchval(q.format(new_post_id, tag))
-                    except ForeignKeyViolationError as e:
-                        return create_response(Responses.BAD_REQUEST)
-        return create_response(Responses.CREATED)
+                if 'tags' in payload:
+                    for tag in payload['tags']:
+                        try:
+                            await conn.fetchval(q, new_post_id, tag)
+                        except ForeignKeyViolationError as e:
+                            return create_response(Responses.BAD_REQUEST)
+        return create_response(Responses.CREATED, {"id": new_post_id})
     else:
         return create_response(Responses.BAD_REQUEST)
 
@@ -37,16 +47,9 @@ async def posts(payload: dict) -> dict:
     rows = await conn.fetch("""SELECT * FROM posts""")
     posts = []
     for row in rows:
-        temp = {
-            "id": row['id'],
-            "type": row['type'],
-            "title": row['title'],
-            "user_id": row['user_id'],
-            "content": row['content'],
-            "status": row['status']
-        }
-        q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
-        tags_rows = await conn.fetch(q.format(row['id']))
+        temp = post_from_db(row)
+        q = """SELECT tag_id FROM post_tags WHERE post_id=$1"""
+        tags_rows = await conn.fetch(q, row['id'])
         tags = [tag['tag_id'] for tag in tags_rows]
         temp.update({"tags": tags})
         posts.append(temp)
@@ -55,18 +58,11 @@ async def posts(payload: dict) -> dict:
 @jwt
 async def post(payload: dict, id: int) -> dict:
     conn = Db.get_pool()
-    row = await conn.fetch("""SELECT * FROM posts WHERE id={}""".format(id))
+    row = await conn.fetch("""SELECT * FROM posts WHERE id=$1""", id)
     row = row[0]
-    temp = {
-            "id": row['id'],
-            "type": row['type'],
-            "title": row['title'],
-            "user_id": row['user_id'],
-            "content": row['content'],
-            "status": row['status']
-        }
-    q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
-    tags_rows = await conn.fetch(q.format(row['id']))
+    temp = post_from_db(row)
+    q = """SELECT tag_id FROM post_tags WHERE post_id=$1"""
+    tags_rows = await conn.fetch(q, row['id'])
     tags = [tag['tag_id'] for tag in tags_rows]
     temp.update({"tags": tags})
 
@@ -76,7 +72,7 @@ async def post(payload: dict, id: int) -> dict:
 async def delete_post(payload: dict) -> dict:
     if await validate_deletion(payload):
         conn = Db.get_pool()
-        row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id={}""".format(payload['id']))
+        row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id=$1""", payload['id'])
         return create_response(Responses.OK)
     else:
         return create_response(Responses.BAD_REQUEST)

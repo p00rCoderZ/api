@@ -9,6 +9,7 @@ import json
 import jwt
 from urllib3.exceptions import NewConnectionError
 from copy import deepcopy
+from datetime import datetime
 API_PORT=8000
 API_URL = 'http://localhost:8000/'
 DSN = 'postgres://pros:foobar@postgres:5432/_test'
@@ -57,9 +58,8 @@ class EndpointBase(unittest.TestCase):
     def _send_post_request(self, URL, payload, response_code=200, wrap_payload=True):
         r = requests.post(URL, data=self._wrap_payload(payload) if wrap_payload else payload)
         
-        print(r.json())
         self.assertIsNotNone(r.json())
-        self.assertEqual(r.json()["status"], response_code)
+        self.assertEqual(r.status_code, response_code)
 
         return r
 
@@ -77,7 +77,7 @@ class EndpointTest(EndpointBase):
     def test_root(self):
         r = requests.get('http://localhost:8000/')
         payload = r.json()
-        self.assertEqual(payload["status"], 200)
+        self.assertEqual(r.status_code, 200)
         self.assertEqual(payload["app"], "K-UP API")
 
     def test_jwt(self):
@@ -85,7 +85,7 @@ class EndpointTest(EndpointBase):
         self.assertEqual(r.json()["payload"], {"test": "test"})
         bad_token = jwt.encode({"test": "test"}, key="badkey", algorithm='HS256')
         r = self._send_post_request(API_URL + 'jwt', payload=bad_token, response_code=401, wrap_payload=False)
-        self.assertEqual(r.json()["status"], 401)
+        self.assertEqual(r.status_code, 401)
         self.assertEqual(r.json()["msg"], "user not authorized")
 
     def test_db_clear_after_restart(self):
@@ -118,7 +118,7 @@ class UserEndpointTest(EndpointBase):
         self._insert_new_user()
 
         r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
 
         self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
         self.assertEqual(self.cur.fetchone()[0], True)
@@ -127,22 +127,22 @@ class UserEndpointTest(EndpointBase):
         self._insert_new_user()
 
         r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
 
         r = self._send_post_request(API_URL + 'delete_user', payload={"id": 1})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
 
         self.cur.execute("SELECT soft_delete FROM users WHERE id=1")
         self.assertEqual(self.cur.fetchone()[0], True)
 
     def test_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["users"], [])
         
         self._insert_new_user()
         r = self._send_post_request(API_URL + 'users', payload={})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
         self.assertEqual(len(r.json()["users"]), 1)
         temp_user = deepcopy(DEFAULT_USER)
         del temp_user['password']
@@ -154,7 +154,7 @@ class UserEndpointTest(EndpointBase):
 
     def test_specific_users(self):
         r = self._send_post_request(API_URL + 'users', payload={})
-        self.assertEqual(r.json()["status"], 200)
+        self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["users"], [])
 
         self._insert_new_user()
@@ -198,19 +198,19 @@ class UserEndpointTest(EndpointBase):
 
     def test_invalid_data_login(self):
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"id": 1}))
-        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.status_code, 400)
 
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"id": "pls break"}))
-        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.status_code, 400)
         
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"email": "'get rekt'"}))
-        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.status_code, 400)
 
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"password": "42",  "email": "'get rekt'"}))
-        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.status_code, 400)
         
         r = requests.post(API_URL + 'login', data=self._wrap_payload({"password": 42,  "email": "'get rekt'"}))
-        self.assertEqual(r.json()["status"], 400)
+        self.assertEqual(r.status_code, 400)
     
     def test_nick_exists(self):
         r = self._send_post_request(API_URL + 'nick_exists', payload={"nick": "test"})
@@ -241,6 +241,7 @@ class PostsEndpointTest(EndpointBase):
             'tags': [1, 2]
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+        self.assertEqual(r.json()["id"], 1)
         r = self._send_post_request(API_URL + 'posts', payload={})
         post = r.json()['posts'][0]
         to_compare = {
@@ -252,9 +253,18 @@ class PostsEndpointTest(EndpointBase):
             'tags': [1, 2],
             'status': 'active'
         }
+        date = deepcopy(post['date'])
+        del post['date']
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
+
         r = self._send_post_request(API_URL + 'posts/1', payload={})
         post = r.json()['posts'][0]
+        date = deepcopy(post['date'])
+        del post['date']
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
         self.assertEqual(post, to_compare)
 
     def test_new_post_invalid_data(self):
@@ -279,6 +289,64 @@ class PostsEndpointTest(EndpointBase):
         }
         r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
         r = self._send_post_request(API_URL + 'delete_post', payload={"id": 1, "user_id": 1})
+
+    def test_post_without_tags(self):
+        self._insert_new_user()
+        r = self._perform_login(email=DEFAULT_USER["email"], password=DEFAULT_USER["password"])
+        id = r.json()['id']
+        post = {
+            "type": "seek",
+            "title": "Hello",
+            "user_id": id,
+            "content": "Huge amount of content",
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+
+        to_compare = {
+            "id": 1,
+            "type": "seek",
+            "title": "Hello",
+            "user_id": id,
+            "content": "Huge amount of content",
+            'tags': [],
+            'status': 'active'
+        }
+        r = self._send_post_request(API_URL + 'posts/1', payload={})
+        post = r.json()['posts'][0]
+        
+        date = deepcopy(post["date"])
+        del post["date"]
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
+        self.assertEqual(post, to_compare)
+        
+        post = {
+            "type": "offer",
+            "title": "Hello2",
+            "user_id": id,
+            "content": "Huge amount of content",
+            "tags": []
+        }
+        r = self._send_post_request(API_URL + 'new_post', payload=post, response_code=201)
+
+        to_compare = {
+            "id": 2,
+            "type": "offer",
+            "title": "Hello2",
+            "user_id": id,
+            "content": "Huge amount of content",
+            'tags': [],
+            'status': 'active'
+        }
+        r = self._send_post_request(API_URL + 'posts/2', payload={})
+        post = r.json()['posts'][0]
+
+        date = deepcopy(post["date"])
+        del post["date"]
+        date_from_api = datetime.fromtimestamp(date)
+        self.assertEqual(datetime.today().date(), date_from_api.date())
+        self.assertEqual(post, to_compare)
+
 
 class TagEndpointTest(EndpointBase):
     def test_tags(self):

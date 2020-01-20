@@ -18,8 +18,8 @@ async def validate_deletion(payload: dict) -> bool:
         return False
     
     conn = Db.get_pool()
-    q = """ SELECT user_id FROM posts WHERE id={} """.format(payload['id'])
-    post_author_id = await conn.fetch(q)
+    q = """ SELECT user_id FROM posts WHERE id=$1 """
+    post_author_id = await conn.fetch(q, payload['id'])
     post_author_id = post_author_id[0]['user_id']
     return post_author_id == payload['user_id']
 
