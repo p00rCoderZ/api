@@ -24,19 +24,18 @@ async def new_post(payload: dict) -> dict:
         async with db_conn.acquire() as conn:
             async with conn.transaction():
                 q = """INSERT INTO posts (user_id, type, title, content) VALUES
-                    ({user_id}, '{type}', '{title}', '{content}') RETURNING *
+                    ($1, $2, $3, $4) RETURNING *
                 """
-                print(q.format(**payload))
-                new_post_id = await conn.fetchval(q.format(**payload))
-                print(new_post_id)
-                q = """INSERT INTO post_tags (post_id, tag_id) values ({}, {}) RETURNING *
+                new_post_id = await conn.fetchval(q, payload["user_id"], payload["type"],
+                    payload["title"], payload["content"]
+                )
+                q = """INSERT INTO post_tags (post_id, tag_id) values ($1, $2) RETURNING *
                 """
                 if 'tags' in payload:
                     print(payload['tags'])
                     for tag in payload['tags']:
-                        print('Inserting tags {}'.format(q.format(new_post_id, tag)))
                         try:
-                            await conn.fetchval(q.format(new_post_id, tag))
+                            await conn.fetchval(q, new_post_id, tag)
                         except ForeignKeyViolationError as e:
                             return create_response(Responses.BAD_REQUEST)
         return create_response(Responses.CREATED, {"id": new_post_id})
@@ -50,8 +49,8 @@ async def posts(payload: dict) -> dict:
     posts = []
     for row in rows:
         temp = post_from_db(row)
-        q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
-        tags_rows = await conn.fetch(q.format(row['id']))
+        q = """SELECT tag_id FROM post_tags WHERE post_id=$1"""
+        tags_rows = await conn.fetch(q, row['id'])
         tags = [tag['tag_id'] for tag in tags_rows]
         temp.update({"tags": tags})
         posts.append(temp)
@@ -60,11 +59,11 @@ async def posts(payload: dict) -> dict:
 @jwt
 async def post(payload: dict, id: int) -> dict:
     conn = Db.get_pool()
-    row = await conn.fetch("""SELECT * FROM posts WHERE id={}""".format(id))
+    row = await conn.fetch("""SELECT * FROM posts WHERE id=$1""", id)
     row = row[0]
     temp = post_from_db(row)
-    q = """SELECT tag_id FROM post_tags WHERE post_id={}"""
-    tags_rows = await conn.fetch(q.format(row['id']))
+    q = """SELECT tag_id FROM post_tags WHERE post_id=$1"""
+    tags_rows = await conn.fetch(q, row['id'])
     tags = [tag['tag_id'] for tag in tags_rows]
     temp.update({"tags": tags})
 
@@ -74,7 +73,7 @@ async def post(payload: dict, id: int) -> dict:
 async def delete_post(payload: dict) -> dict:
     if await validate_deletion(payload):
         conn = Db.get_pool()
-        row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id={}""".format(payload['id']))
+        row = await conn.fetch("""UPDATE posts SET status='inactive' WHERE id=$1""", payload['id'])
         return create_response(Responses.OK)
     else:
         return create_response(Responses.BAD_REQUEST)

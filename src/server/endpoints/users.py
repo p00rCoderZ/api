@@ -12,11 +12,10 @@ async def new_user(payload: dict) -> dict:
     keys = ['nick', 'email', 'password']
     if check_keys_in_payload(payload, keys):
         db_conn = Db.get_pool()
-        hash = pwd_context.hash(payload["password"])
-        payload.update({"password": hash})
-        q = "INSERT INTO users (nick, email, password) VALUES ('{nick}', '{email}', '{password}') RETURNING *"
+        hashed = pwd_context.hash(payload["password"])
+        q = "INSERT INTO users (nick, email, password) VALUES ($1, $2, $3) RETURNING *"
         try:
-            lets_see = await db_conn.fetchval(q.format(**payload))
+            lets_see = await db_conn.fetchval(q, payload['nick'], payload['email'], hashed)
             return create_response(Responses.CREATED)
         except UniqueViolationError as e:
             return create_response(Responses.BAD_REQUEST, {"msg": "user already exists"})
@@ -27,8 +26,8 @@ async def new_user(payload: dict) -> dict:
 async def login(payload: dict) -> dict:
     if check_keys_in_payload(payload, ['email', 'password']):
         db_conn = Db.get_pool()
-        q = "SELECT id, password FROM users WHERE email='{}'"
-        row = await db_conn.fetch(q.format(payload["email"]))
+        q = "SELECT id, password FROM users WHERE email=$1"
+        row = await db_conn.fetch(q, payload["email"])
         if row:
             row = row[0]
             id, hashed_passwd = row['id'], row['password']
@@ -43,8 +42,8 @@ async def login(payload: dict) -> dict:
 async def nick_exists(payload: dict) -> dict:
     if check_keys_in_payload(payload, ['nick']):
         db_conn = Db.get_pool()
-        q = "SELECT count(*) FROM users WHERE nick='{}'"
-        row = await db_conn.fetch(q.format(payload['nick']))
+        q = "SELECT count(*) FROM users WHERE nick=$1"
+        row = await db_conn.fetch(q, payload['nick'])
         if row:
             count = row[0][0]
             return create_response(Responses.OK, {"exists": count >= 1})
@@ -53,24 +52,24 @@ async def nick_exists(payload: dict) -> dict:
 async def email_exists(payload: dict) -> dict:
     if check_keys_in_payload(payload, ['email']):
         db_conn = Db.get_pool()
-        q = "SELECT count(*) FROM users WHERE email='{}'"
-        row = await db_conn.fetch(q.format(payload['email']))
+        q = "SELECT count(*) FROM users WHERE email=$1"
+        row = await db_conn.fetch(q, payload['email'])
         if row:
             count = row[0][0]
             return create_response(Responses.OK, {"exists": count >= 1})
 
 @jwt
 async def delete_user(payload: dict) -> dict:
-    q = "UPDATE users SET soft_delete='t' WHERE id={}"
+    q = "UPDATE users SET soft_delete='t' WHERE id=$1"
     db_conn = Db.get_pool()
-    await db_conn.fetchval(q.format(payload['id']))
+    await db_conn.fetchval(q, payload['id'])
     return create_response(Responses.OK)
 
 @jwt
 async def show_user(payload: dict, id: int) -> dict:
-    q = "SELECT * FROM users WHERE id={}"
+    q = "SELECT * FROM users WHERE id=$1"
     db_conn = Db.get_pool()
-    user = await db_conn.fetch(q.format(id))
+    user = await db_conn.fetch(q, id)
     if user:
         user = user[0]
         user = {
