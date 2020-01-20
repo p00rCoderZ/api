@@ -13,8 +13,7 @@ def jwt(f):
             try:
                 return json(await f(payload, *args, **kwargs))
             except Exception as e:
-                print(traceback.format_exc())
-                return json(create_response(Responses.INTERNAL))
+                return json(create_response(Responses.INTERNAL, {"traceback": traceback.format_exc()}))
         else:
             return json(create_response(Responses.UNAUTHORIZED))
     return wrapper
@@ -24,6 +23,5 @@ def no_jwt(f):
         try:
             return json(await f(request.body, *args, **kwargs))
         except Exception as e:
-            print(traceback.format_exc())
-            return json(create_response(Responses.INTERNAL))
+            return json(create_response(Responses.INTERNAL, {"traceback": traceback.format_exc()}))
     return wrapper

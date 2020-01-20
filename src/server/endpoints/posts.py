@@ -32,7 +32,6 @@ async def new_post(payload: dict) -> dict:
                 q = """INSERT INTO post_tags (post_id, tag_id) values ($1, $2) RETURNING *
                 """
                 if 'tags' in payload:
-                    print(payload['tags'])
                     for tag in payload['tags']:
                         try:
                             await conn.fetchval(q, new_post_id, tag)

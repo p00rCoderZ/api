@@ -58,7 +58,6 @@ class EndpointBase(unittest.TestCase):
     def _send_post_request(self, URL, payload, response_code=200, wrap_payload=True):
         r = requests.post(URL, data=self._wrap_payload(payload) if wrap_payload else payload)
         
-        print(r.json())
         self.assertIsNotNone(r.json())
         self.assertEqual(r.json()["status"], response_code)
 
